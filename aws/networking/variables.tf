@@ -1,26 +1,12 @@
 variable "vpc" {
-  type = object({
-    name = string
-    cidr_block = string
-    enable_dns_hostnames = bool
-  })
-}
-
-variable "subnets" {
   type = map(object({
     cidr_block = string
-    availability_zone = string
+    internet_gateway = string
+    route_table      = string
+    enable_dns_hostnames = optional(bool, true)
+    subnets = map(object({
+      cidr_block        = string
+      availability_zone = string
+    }))
   }))
-}
-
-variable "internet_gateway_name" {
-  type = string
-}
-
-variable "route_table_name" {
-  type = string
-}
-
-variable "route_table_cidr" {
-  type = string
 }

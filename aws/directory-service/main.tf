@@ -2,7 +2,7 @@
 # TF/Provider configuration
 #####################################################################
  
-# Uses code in terraform-aws-modules/aws/version (terraform.tf)
+# (terraform.tf)
 module aws_version {
     source = "../version"
 }
@@ -33,7 +33,7 @@ resource "aws_directory_service_directory" "main" {
  
   vpc_settings {
     vpc_id     = data.aws_vpc.main.id                                                    # NEEDS UPDATED TO GET CORRECT VPC
-    subnet_ids = [data.aws_subnet.main[0].id, data.aws_subnet.main[1].id]                # NEEDS UPDATED TO GET CORRECT SUBNETS
+    subnet_ids = local.subnets_ids               # NEEDS UPDATED TO GET CORRECT SUBNETS
   }
  
   #tags = {}

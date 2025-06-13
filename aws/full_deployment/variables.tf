@@ -1,6 +1,6 @@
 variable "vpc" {
   description = "VPC configuration"
-  type = object({
+  type        = object({
     name                   = string
     cidr_block             = string
     enable_dns_hostnames   = optional(bool, true)
@@ -9,7 +9,7 @@ variable "vpc" {
 
 variable "subnets" {
   description = "Map of subnets configuration"
-  type = map(object({
+  type        = map(object({
     availability_zone = string
     cidr_block        = string
   }))
@@ -32,7 +32,7 @@ variable "route_table_cidr" {
 
 variable "security_group" {
   description = "Security group configuration"
-  type = object({
+  type        = object({
     security_group_name   = string
     vpc_id                = string
     rules                 = list(object({

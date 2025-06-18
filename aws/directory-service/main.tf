@@ -11,19 +11,27 @@ module aws_version {
 # Data
 #####################################################################
  
-data "aws_vpc" "main" {}
-data "aws_subnets" "main" {
+data "aws_vpc" "main" {
+  for_each = var.directory_service
   filter {
-    values = [data.aws_vpc.main.id]
+    name   = "tag:Name"
+    values = [each.value.vpc]
+  }
+}
+
+data "aws_subnets" "main" {
+  for_each = var.directory_service
+  filter {
+    values = [data.aws_vpc.main[each.key].id]
     name   = "vpc-id"
   }
 }
-output "vpc_id" {
-  value = data.aws_vpc.main.id 
-}
-output "subnet_ids" {
-  value = local.subnet_ids
-}
+
+#output "subnet_ids" {
+#  value = local.subnet_ids
+#  #value = data.aws_subnets.main["Managed-AD-1"]
+#}
+
 #####################################################################
 # Resources
 #####################################################################
@@ -43,22 +51,11 @@ resource "aws_directory_service_directory" "main" {
   enable_sso                           = each.value.enable_sso
  
   vpc_settings {
-    vpc_id     = data.aws_vpc.main.id            # NEEDS UPDATED TO GET CORRECT VPC
-    subnet_ids = local.subnet_ids               # NEEDS UPDATED TO GET CORRECT SUBNETS
+    vpc_id     = data.aws_vpc.main[each.key].id
+    subnet_ids = data.aws_subnets.main[each.key].ids
   }
  
   #tags = {}
- 
-#desired_number_of_domain_controllers - (Optional)
-#short_name - (Optional)
-#enable_sso - (Optional)
-#alias - (Optional)
-#description - (Optional)
-#vpc_settings - (Required for SimpleAD and MicrosoftAD)
-#region – (Optional)
-#type (Optional)
-#edition - (Optional, for type MicrosoftAD only) (Standard or Enterprise)
-#tags - (Optional)
  
 # In addition to all arguments above, the following attributes are exported:
   # id - The directory identifier.

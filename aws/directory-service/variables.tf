@@ -3,6 +3,7 @@ variable "directory_service" {
     #name                    = string
     alias                   = string
     description             = optional(string, "")
+    vpc                     = string
     type                    = optional(string, "MicrosoftAD")
     password                = string
     edition                 = optional(string, "Enterprise")

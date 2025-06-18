@@ -17,7 +17,7 @@
 *.pem
 
 # .hcl files from Terraform v0.14 and newer
-*.hcl
+# *.hcl
 
 # working directory for web app
 /globo_web_app/*

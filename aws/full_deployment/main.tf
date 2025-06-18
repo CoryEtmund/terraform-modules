@@ -34,6 +34,13 @@ module "networking" {
   #}
 }
 
+module "directory_service" {
+  count = var.directory_service != null ? 1 : 0
+  source = "../directory-service"
+  directory_service = var.directory_service
+  depends_on = [ module.networking ]
+}
+
 #module "networking2" {
 #  source = "../networking"
 #  vpc = var.vpc

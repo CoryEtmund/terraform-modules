@@ -16,3 +16,17 @@ variable "vpc" {
     }))
   }))
 }
+
+variable "directory_service" {
+  type = map(object({
+    alias                   = string
+    description             = optional(string, "")
+    type                    = optional(string, "MicrosoftAD")
+    password                = string
+    edition                 = optional(string, "Enterprise")
+    domain_controller_count = optional(number, 2)
+    short_name              = optional(string, "")
+    enable_sso              = optional(bool, false)
+  }))
+  default = null
+}

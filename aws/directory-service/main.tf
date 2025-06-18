@@ -12,28 +12,39 @@ module aws_version {
 #####################################################################
  
 data "aws_vpc" "main" {}
-data "aws_subnet" "main" {}
- 
+data "aws_subnets" "main" {
+  filter {
+    values = [data.aws_vpc.main.id]
+    name   = "vpc-id"
+  }
+}
+output "vpc_id" {
+  value = data.aws_vpc.main.id 
+}
+output "subnet_ids" {
+  value = local.subnet_ids
+}
 #####################################################################
 # Resources
 #####################################################################
  
 # Primary AD deployment
 resource "aws_directory_service_directory" "main" {
-  name        = var.name
-  alias       = var.alias
-  description = var.description
-  # region    = var.region # "us-east-1" # defaults to region set in provider if not set here # NOT AVAILABLE IN THIS PROVIDER VERSION
-  password    = "test"
-  edition     = var.edition
-  type        = var.type
-  desired_number_of_domain_controllers = var.domain_controller_count
-  short_name  = var.short_name
-  enable_sso  = var.enable_sso
+  for_each                             = var.directory_service
+  name                                 = each.key
+  alias                                = each.value.alias
+  description                          = each.value.description
+  #region                               = var.region # "us-east-1" # defaults to region set in provider if not set here # NOT AVAILABLE IN THIS PROVIDER VERSION
+  password                             = each.value.password
+  edition                              = each.value.edition
+  type                                 = each.value.type
+  desired_number_of_domain_controllers = each.value.domain_controller_count
+  short_name                           = each.value.short_name
+  enable_sso                           = each.value.enable_sso
  
   vpc_settings {
-    vpc_id     = data.aws_vpc.main.id                                                    # NEEDS UPDATED TO GET CORRECT VPC
-    subnet_ids = local.subnets_ids               # NEEDS UPDATED TO GET CORRECT SUBNETS
+    vpc_id     = data.aws_vpc.main.id            # NEEDS UPDATED TO GET CORRECT VPC
+    subnet_ids = local.subnet_ids               # NEEDS UPDATED TO GET CORRECT SUBNETS
   }
  
   #tags = {}

@@ -1,5 +1,5 @@
 locals {
-    subnets_ids = [ for v in data.data.aws_subnet.main : v.id ]
+    subnet_ids = data.aws_subnets.main.ids
 }
 
 #locals {

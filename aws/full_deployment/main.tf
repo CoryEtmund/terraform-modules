@@ -1,50 +1,28 @@
-#provider "aws" {
-#  region = "us-east-1"
-#  alias = "us-east-1"
-#}
-#
-#provider "aws" {
-#  region = "us-east-2"
-#  alias = "us-east-2"
-#}
-#
-#provider "aws" {
-#  region = "us-east-1"
-#  alias = "UE1"
-#}
-#
-#provider "aws" {
-#  region = "us-east-2"
-#  alias = "UE2"
-#}
-#
-#locals {
-#  provider_alias = "aws.${var.region}"
-#}
+module aws_version {
+    source = "../version"
+}
 
 provider "aws" {
   region = var.region
 }
 
+provider "aws" {
+  region = var.backup_region
+  alias  = "backup"
+}
+
 module "networking" {
   source = "../networking"
-  vpc = var.vpc
-  #providers = {
-  #  aws = aws.us-east-1
-  #}
+  vpc    = var.vpc
 }
 
 module "directory_service" {
-  count = var.directory_service != null ? 1 : 0
-  source = "../directory-service"
-  directory_service = var.directory_service
-  depends_on = [ module.networking ]
+  count              = var.directory_service != null ? 1 : 0
+  source             = "../directory-service"
+  directory_service  = var.directory_service
+  backup_region      = var.backup_region != null ? var.backup_region : null
+  depends_on         = [module.networking]
+  providers = {
+    aws.backup = aws.backup
+  }
 }
-
-#module "networking2" {
-#  source = "../networking"
-#  vpc = var.vpc
-#  providers = {
-#    aws = aws.UE2
-#  }
-#}

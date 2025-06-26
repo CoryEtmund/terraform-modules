@@ -1,16 +1,19 @@
 variable "directory_service" {
   type = map(object({
-    #name                    = string
     alias                   = string
-    description             = optional(string, "")
+    description             = optional(string, null)
     vpc                     = string
     type                    = optional(string, "MicrosoftAD")
     password                = string
     edition                 = optional(string, "Enterprise")
     domain_controller_count = optional(number, 2)
-    short_name              = optional(string)
+    short_name              = optional(string, null)
     enable_sso              = optional(bool, false)
   }))
+}
+
+variable "backup_region" {
+  type    = string
 }
 
 #variable "name" {

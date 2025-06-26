@@ -1,17 +1,25 @@
 #####################################################################
-# TF/Provider configuration
+# TF / Providers
 #####################################################################
- 
-# (terraform.tf)
+
 module aws_version {
     source = "../version"
 }
- 
+
+terraform {
+  required_providers {
+    aws = {
+      configuration_aliases = [ aws.backup ]
+    }
+  }
+}
+
 #####################################################################
 # Data
 #####################################################################
  
 data "aws_vpc" "main" {
+  #provider = aws.main
   for_each = var.directory_service
   filter {
     name   = "tag:Name"
@@ -20,9 +28,28 @@ data "aws_vpc" "main" {
 }
 
 data "aws_subnets" "main" {
+  #provider = aws.main
   for_each = var.directory_service
   filter {
     values = [data.aws_vpc.main[each.key].id]
+    name   = "vpc-id"
+  }
+}
+
+data "aws_vpc" "backup" {
+  provider = aws.backup
+  for_each = var.directory_service
+  filter {
+    name   = "tag:Name"
+    values = [each.value.vpc]
+  }
+}
+
+data "aws_subnets" "backup" {
+  provider = aws.backup
+  for_each = var.directory_service
+  filter {
+    values = [data.aws_vpc.backup[each.key].id]
     name   = "vpc-id"
   }
 }
@@ -38,11 +65,11 @@ data "aws_subnets" "main" {
  
 # Primary AD deployment
 resource "aws_directory_service_directory" "main" {
+  #provider                             = aws.main
   for_each                             = var.directory_service
   name                                 = each.key
   alias                                = each.value.alias
   description                          = each.value.description
-  #region                               = var.region # "us-east-1" # defaults to region set in provider if not set here # NOT AVAILABLE IN THIS PROVIDER VERSION
   password                             = each.value.password
   edition                              = each.value.edition
   type                                 = each.value.type
@@ -73,9 +100,16 @@ resource "aws_directory_service_directory" "main" {
  
  
 #aws_directory_service_region # FOR MULTI-REGION REPLICATION
-#resource "aws_directory_service_region" "main" {
-#
-#}
+resource "aws_directory_service_region" "main" {
+  for_each     = var.directory_service
+  directory_id = aws_directory_service_directory.main[each.key].id
+  region_name  = var.backup_region
+  desired_number_of_domain_controllers = each.value.domain_controller_count
+  vpc_settings {
+    vpc_id     = data.aws_vpc.backup[each.key].id
+    subnet_ids = data.aws_subnets.backup[each.key].ids
+  }
+}
  
  
 #aws_directory_service_conditional_forwarder

@@ -17,7 +17,7 @@ terraform {
 #####################################################################
 # Data
 #####################################################################
- 
+
 data "aws_vpc" "main" {
   #provider = aws.main
   for_each = var.directory_service
@@ -62,7 +62,7 @@ data "aws_subnets" "backup" {
 #####################################################################
 # Resources
 #####################################################################
- 
+
 # Primary AD deployment
 resource "aws_directory_service_directory" "main" {
   #provider                             = aws.main
@@ -76,14 +76,14 @@ resource "aws_directory_service_directory" "main" {
   desired_number_of_domain_controllers = each.value.domain_controller_count
   short_name                           = each.value.short_name
   enable_sso                           = each.value.enable_sso
- 
+
   vpc_settings {
     vpc_id     = data.aws_vpc.main[each.key].id
     subnet_ids = data.aws_subnets.main[each.key].ids
   }
- 
+
   #tags = {}
- 
+
 # In addition to all arguments above, the following attributes are exported:
   # id - The directory identifier.
   # access_url - The access URL for the directory, such as http://alias.awsapps.com.
@@ -97,8 +97,8 @@ resource "aws_directory_service_directory" "main" {
   # update - (Default 60 minutes) Used for directory update
   # delete - (Default 60 minutes) Used for directory deletion
 }
- 
- 
+
+
 #aws_directory_service_region # FOR MULTI-REGION REPLICATION
 resource "aws_directory_service_region" "main" {
   for_each     = var.directory_service
@@ -110,21 +110,21 @@ resource "aws_directory_service_region" "main" {
     subnet_ids = data.aws_subnets.backup[each.key].ids
   }
 }
- 
- 
+
+
 #aws_directory_service_conditional_forwarder
- 
- 
+
+
 #aws_directory_service_log_subscription
- 
- 
+
+
 #aws_directory_service_radius_settings
- 
- 
+
+
 #aws_directory_service_shared_directory
- 
- 
+
+
 #aws_directory_service_shared_directory_accepter
- 
- 
+
+
 #aws_directory_service_trust

@@ -1,0 +1,203 @@
+###############################################################################
+# virtual_machines.yaml — Nutanix VM Definitions
+#
+# This file drives ALL virtual machine creation and import.
+#
+# IMPORTANT:
+#   - For NEW VMs:      omit `import_uuid` (or set to null)
+#   - For EXISTING VMs: set `import_uuid` to the VM's UUID from Prism Central.
+#     After the first successful `terragrunt apply`, remove `import_uuid`.
+#
+# Only specify the fields you need — all optional fields default to null.
+# Refer to Modules/virtual_machines/variables.tf for the complete schema.
+###############################################################################
+
+virtual_machines:
+
+  #=============================================================================
+  # Example 1: NEW Linux VM with cloud-init
+  #=============================================================================
+  - name: "app-server-01"
+    description: "Application server - Ubuntu 22.04"
+    # import_uuid: null   # Omit for new VMs
+
+    # Cluster & Placement
+    cluster:
+      ext_id: "00000000-0000-0000-0000-000000000001"  # Replace with actual cluster UUID
+
+    # Compute
+    num_sockets: 2
+    num_cores_per_socket: 2
+    num_threads_per_core: 1
+    memory_size_bytes: 8589934592    # 8 GiB (8 * 1024^3)
+    power_state: "ON"
+
+    # Machine & Boot
+    machine_type: "PC"
+    boot_config:
+      legacy_boot:
+        boot_order:
+          - "DISK"
+          - "CDROM"
+          - "NETWORK"
+
+    # Disks
+    disks:
+      # OS disk — cloned from an image
+      - disk_address:
+          bus_type: "SCSI"
+          index: 0
+        backing_info:
+          vm_disk:
+            disk_size_bytes: 53687091200  # 50 GiB
+            storage_container:
+              ext_id: "00000000-0000-0000-0000-000000000010"  # Replace with actual container UUID
+            data_source:
+              reference:
+                image_reference:
+                  image_ext_id: "00000000-0000-0000-0000-000000000020"  # Replace with actual image UUID
+
+      # Data disk — empty
+      - disk_address:
+          bus_type: "SCSI"
+          index: 1
+        backing_info:
+          vm_disk:
+            disk_size_bytes: 107374182400  # 100 GiB
+            storage_container:
+              ext_id: "00000000-0000-0000-0000-000000000010"
+
+    # NICs
+    nics:
+      - backing_info:
+          model: "VIRTIO"
+          is_connected: true
+        network_info:
+          nic_type: "NORMAL_NIC"
+          subnet:
+            ext_id: "00000000-0000-0000-0000-000000000030"  # Replace with actual subnet UUID
+          ipv4_config:
+            should_assign_ip: true   # DHCP / IPAM
+
+    # Guest Customization — cloud-init
+    guest_customization:
+      config:
+        cloud_init:
+          datasource_type: "CONFIG_DRIVE_V2"
+          cloud_init_script:
+            user_data:
+              # Base64-encoded cloud-init user_data.  Encode your YAML with:
+              #   cat cloud-init.yaml | base64 -w0
+              value: "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQpwYWNrYWdlczoKICAtIHFl bXUtZ3Vlc3QtYWdlbnQK"
+
+    # Categories
+    categories:
+      - ext_id: "00000000-0000-0000-0000-000000000040"   # Replace with actual category UUID
+
+  #=============================================================================
+  # Example 2: EXISTING VM to import into state
+  #=============================================================================
+  - name: "legacy-db-server-01"
+    description: "Legacy database server — imported into Terraform management"
+    import_uuid: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"  # Actual VM UUID from Prism Central
+
+    # IMPORTANT: These values MUST match the current state of the VM in Prism.
+    # Run `terragrunt plan` after import — if there is drift, adjust values here
+    # until the plan shows no changes before making intentional modifications.
+
+    cluster:
+      ext_id: "00000000-0000-0000-0000-000000000001"
+
+    num_sockets: 4
+    num_cores_per_socket: 2
+    memory_size_bytes: 17179869184   # 16 GiB
+    power_state: "ON"
+
+    machine_type: "PC"
+    boot_config:
+      legacy_boot:
+        boot_order:
+          - "DISK"
+          - "NETWORK"
+
+    disks:
+      - disk_address:
+          bus_type: "SCSI"
+          index: 0
+        backing_info:
+          vm_disk:
+            disk_size_bytes: 107374182400  # 100 GiB
+            storage_container:
+              ext_id: "00000000-0000-0000-0000-000000000010"
+
+    nics:
+      - backing_info:
+          model: "VIRTIO"
+          is_connected: true
+        network_info:
+          nic_type: "NORMAL_NIC"
+          subnet:
+            ext_id: "00000000-0000-0000-0000-000000000030"
+          ipv4_config:
+            should_assign_ip: false
+            ip_address:
+              value: "10.0.100.50"     # Static IP matching current assignment
+
+  #=============================================================================
+  # Example 3: NEW Windows VM with Sysprep & UEFI Secure Boot
+  #=============================================================================
+  - name: "win-server-01"
+    description: "Windows Server 2022 - Domain joined"
+
+    cluster:
+      ext_id: "00000000-0000-0000-0000-000000000001"
+
+    num_sockets: 2
+    num_cores_per_socket: 4
+    memory_size_bytes: 17179869184   # 16 GiB
+    power_state: "OFF"               # Leave off until sysprep completes
+
+    machine_type: "Q35"              # Required for UEFI Secure Boot
+    boot_config:
+      uefi_boot:
+        is_secure_boot_enabled: true
+
+    vtpm_config:
+      is_vtpm_enabled: true
+
+    disks:
+      - disk_address:
+          bus_type: "SCSI"
+          index: 0
+        backing_info:
+          vm_disk:
+            disk_size_bytes: 107374182400  # 100 GiB
+            storage_container:
+              ext_id: "00000000-0000-0000-0000-000000000010"
+            data_source:
+              reference:
+                image_reference:
+                  image_ext_id: "00000000-0000-0000-0000-000000000021"  # Windows image UUID
+
+    nics:
+      - backing_info:
+          model: "VIRTIO"
+          is_connected: true
+        network_info:
+          nic_type: "NORMAL_NIC"
+          subnet:
+            ext_id: "00000000-0000-0000-0000-000000000030"
+          ipv4_config:
+            should_assign_ip: false
+            ip_address:
+              value: "10.0.100.100"
+
+    # Guest Customization — Sysprep
+    guest_customization:
+      config:
+        sysprep:
+          install_type: "PREPARED"
+          sysprep_script:
+            unattend_xml:
+              # Base64-encoded unattend.xml content
+              value: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHVuYXR0ZW5kPjwvdW5hdHRlbmQ+"

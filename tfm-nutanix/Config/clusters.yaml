@@ -1,0 +1,10 @@
+###############################################################################
+# clusters.yaml — Nutanix Cluster Definitions
+#
+# Used by the clusters module for name → ext_id lookups.
+# Populate with your actual Prism Central cluster UUIDs.
+###############################################################################
+
+clusters:
+  - "cluster-01"     # Add cluster names to filter, or leave empty for all
+  # - "cluster-02"

@@ -1,0 +1,161 @@
+###############################################################################
+# terraform.tfvars.example — Copy to terraform.tfvars and fill in your values
+###############################################################################
+
+# =============================================================================
+# Provider Credentials
+#
+# Option A: Set these here
+# Option B: Use environment variables (NUTANIX_USERNAME, NUTANIX_PASSWORD, etc.)
+# =============================================================================
+
+nutanix_endpoint = "prism-central.example.com"
+nutanix_username = "admin"
+nutanix_password = "your-password-here"
+# nutanix_port         = 9440
+# nutanix_insecure     = true
+# nutanix_session_auth = true
+# nutanix_wait_timeout = 10
+
+# =============================================================================
+# Virtual Machines
+#
+# Supply NAMES for clusters, subnets, images, and storage containers.
+# The module automatically resolves them to ext_ids via data source lookups.
+# =============================================================================
+
+virtual_machines = [
+
+  # ---------------------------------------------------------------------------
+  # Example 1: New Linux VM with cloud-init
+  # ---------------------------------------------------------------------------
+  {
+    name         = "app-server-01"
+    description  = "Application server — Ubuntu 22.04"
+    cluster_name = "Your-Cluster-Name" # ← Data source resolves to ext_id
+
+    num_sockets          = 2
+    num_cores_per_socket = 2
+    memory_size_bytes    = 8589934592 # 8 GiB
+
+    machine_type = "PC"
+    boot_config = {
+      boot_type  = "legacy"
+      boot_order = ["DISK", "CDROM", "NETWORK"]
+    }
+
+    disks = [
+      {
+        bus_type               = "SCSI"
+        index                  = 0
+        disk_size_bytes        = 53687091200 # 50 GiB
+        storage_container_name = "Your-Storage-Container" # ← Name lookup
+        image_name             = "ubuntu-22.04-server"    # ← Name lookup
+      },
+      {
+        bus_type               = "SCSI"
+        index                  = 1
+        disk_size_bytes        = 107374182400 # 100 GiB
+        storage_container_name = "Your-Storage-Container"
+      },
+    ]
+
+    nics = [
+      {
+        subnet_name      = "VLAN-100-Production" # ← Name lookup
+        model            = "VIRTIO"
+        should_assign_ip = true # DHCP / IPAM
+      },
+    ]
+
+    guest_customization = {
+      type                 = "cloud_init"
+      cloud_init_user_data = "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQo="
+    }
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 2: Import an existing VM
+  # ---------------------------------------------------------------------------
+  {
+    name         = "legacy-db-01"
+    description  = "Legacy database — imported into Terraform"
+    import_uuid  = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE" # ← Remove after first apply
+    cluster_name = "Your-Cluster-Name"
+
+    num_sockets          = 4
+    num_cores_per_socket = 2
+    memory_size_bytes    = 17179869184 # 16 GiB
+
+    machine_type = "PC"
+    boot_config = {
+      boot_type  = "legacy"
+      boot_order = ["DISK", "NETWORK"]
+    }
+
+    disks = [
+      {
+        bus_type               = "SCSI"
+        index                  = 0
+        disk_size_bytes        = 107374182400
+        storage_container_name = "Your-Storage-Container"
+      },
+    ]
+
+    nics = [
+      {
+        subnet_name = "VLAN-100-Production"
+        model       = "VIRTIO"
+        ip_address  = "10.0.100.50" # Static IP matching current assignment
+      },
+    ]
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 3: Windows VM with UEFI Secure Boot + Sysprep
+  # ---------------------------------------------------------------------------
+  {
+    name         = "win-server-01"
+    description  = "Windows Server 2022 — domain joined"
+    cluster_name = "Your-Cluster-Name"
+
+    num_sockets          = 2
+    num_cores_per_socket = 4
+    memory_size_bytes    = 17179869184 # 16 GiB
+    power_state          = "OFF"       # Leave off until sysprep completes
+
+    machine_type = "Q35"
+    boot_config = {
+      boot_type              = "uefi"
+      is_secure_boot_enabled = true
+    }
+
+    vtpm_config = {
+      is_vtpm_enabled = true
+    }
+
+    disks = [
+      {
+        bus_type               = "SCSI"
+        index                  = 0
+        disk_size_bytes        = 107374182400
+        storage_container_name = "Your-Storage-Container"
+        image_name             = "windows-server-2022"
+      },
+    ]
+
+    nics = [
+      {
+        subnet_name = "VLAN-100-Production"
+        model       = "VIRTIO"
+        ip_address  = "10.0.100.100"
+      },
+    ]
+
+    guest_customization = {
+      type                 = "sysprep"
+      sysprep_install_type = "PREPARED"
+      sysprep_unattend_xml = "PD94bWwgdmVyc2lvbj0iMS4wIj8+PHVuYXR0ZW5kPjwvdW5hdHRlbmQ+"
+    }
+  },
+]

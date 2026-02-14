@@ -1,0 +1,226 @@
+###############################################################################
+# Example terraform.tfvars — Nutanix Subnets (Networks)
+#
+# Copy this file to terraform.tfvars and edit values to match your
+# environment.  For Terragrunt deployments, use config.yaml instead.
+###############################################################################
+
+# -- Provider credentials (or use environment variables) ----------------------
+# nutanix_username = "admin"
+# nutanix_password = "SuperSecret123!"
+# nutanix_endpoint = "prism-central.example.com"
+# nutanix_port     = 9440
+# nutanix_insecure = true
+
+subnets = [
+
+  # ---------------------------------------------------------------------------
+  # Example 1: Simple VLAN subnet — no IP management (unmanaged)
+  # ---------------------------------------------------------------------------
+  {
+    name         = "vlan-100-unmanaged"
+    description  = "VLAN 100 — unmanaged (no IP pool)"
+    subnet_type  = "VLAN"
+    network_id   = 100
+    cluster_name = "cluster-01"
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 2: VLAN subnet with IP pool and gateway (managed / IPAM)
+  # ---------------------------------------------------------------------------
+  {
+    name         = "vlan-200-managed"
+    description  = "VLAN 200 — managed with IPAM"
+    subnet_type  = "VLAN"
+    network_id   = 200
+    cluster_name = "cluster-01"
+
+    ip_config = [
+      {
+        ipv4 = {
+          ip_subnet = {
+            ip            = "10.20.200.0"
+            prefix_length = 24
+          }
+          default_gateway_ip = "10.20.200.1"
+          pool_list = [
+            {
+              start_ip = "10.20.200.50"
+              end_ip   = "10.20.200.150"
+            },
+          ]
+        }
+      }
+    ]
+
+    dhcp_options = {
+      domain_name_servers = [
+        { ipv4 = "8.8.8.8" },
+        { ipv4 = "8.8.4.4" },
+      ]
+      domain_name    = "example.com"
+      search_domains = ["example.com", "corp.example.com"]
+      ntp_servers = [
+        { ipv4 = "time.google.com" },
+      ]
+    }
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 3: VLAN subnet with multiple IP pools and reserved IPs
+  # ---------------------------------------------------------------------------
+  {
+    name         = "vlan-300-multi-pool"
+    description  = "VLAN 300 — multiple pools with reserved IPs"
+    subnet_type  = "VLAN"
+    network_id   = 300
+    cluster_name = "cluster-01"
+
+    ip_config = [
+      {
+        ipv4 = {
+          ip_subnet = {
+            ip            = "10.30.0.0"
+            prefix_length = 22
+          }
+          default_gateway_ip = "10.30.0.1"
+          pool_list = [
+            {
+              start_ip = "10.30.0.100"
+              end_ip   = "10.30.0.200"
+            },
+            {
+              start_ip = "10.30.1.100"
+              end_ip   = "10.30.1.200"
+            },
+          ]
+        }
+      }
+    ]
+
+    reserved_ip_addresses = [
+      "10.30.0.1",   # Gateway
+      "10.30.0.2",   # Switch management
+      "10.30.0.3",   # IPMI
+    ]
+
+    dhcp_options = {
+      domain_name_servers = [
+        { ipv4 = "10.30.0.10" },
+        { ipv4 = "10.30.0.11" },
+      ]
+      domain_name    = "lab.example.com"
+      search_domains = ["lab.example.com"]
+    }
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 4: External subnet (NAT enabled)
+  # ---------------------------------------------------------------------------
+  {
+    name         = "external-nat"
+    description  = "External subnet with NAT for VPC connectivity"
+    subnet_type  = "VLAN"
+    network_id   = 50
+    cluster_name = "cluster-01"
+    is_external  = true
+    is_nat_enabled = true
+
+    ip_config = [
+      {
+        ipv4 = {
+          ip_subnet = {
+            ip            = "172.16.50.0"
+            prefix_length = 24
+          }
+          default_gateway_ip = "172.16.50.1"
+          pool_list = [
+            {
+              start_ip = "172.16.50.100"
+              end_ip   = "172.16.50.200"
+            },
+          ]
+        }
+      }
+    ]
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 5: Overlay subnet (VPC — requires vpc_reference UUID)
+  # ---------------------------------------------------------------------------
+  {
+    name          = "overlay-app-tier"
+    description   = "Overlay subnet for application tier inside VPC"
+    subnet_type   = "OVERLAY"
+    vpc_reference = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" # VPC UUID
+
+    ip_config = [
+      {
+        ipv4 = {
+          ip_subnet = {
+            ip            = "192.168.10.0"
+            prefix_length = 24
+          }
+          default_gateway_ip = "192.168.10.1"
+          pool_list = [
+            {
+              start_ip = "192.168.10.10"
+              end_ip   = "192.168.10.250"
+            },
+          ]
+        }
+      }
+    ]
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 6: VLAN subnet with DHCP + PXE boot options
+  # ---------------------------------------------------------------------------
+  {
+    name         = "vlan-400-pxe"
+    description  = "VLAN 400 — PXE boot enabled"
+    subnet_type  = "VLAN"
+    network_id   = 400
+    cluster_name = "cluster-01"
+
+    ip_config = [
+      {
+        ipv4 = {
+          ip_subnet = {
+            ip            = "10.40.0.0"
+            prefix_length = 24
+          }
+          default_gateway_ip = "10.40.0.1"
+          pool_list = [
+            {
+              start_ip = "10.40.0.50"
+              end_ip   = "10.40.0.200"
+            },
+          ]
+        }
+      }
+    ]
+
+    dhcp_options = {
+      domain_name_servers = [
+        { ipv4 = "10.40.0.10" },
+      ]
+      domain_name      = "pxe.example.com"
+      search_domains   = ["pxe.example.com"]
+      tftp_server_name = "10.40.0.5"
+      boot_file_name   = "pxelinux.0"
+    }
+  },
+
+  # ---------------------------------------------------------------------------
+  # Example 7: Import an existing subnet (one-time operation)
+  # ---------------------------------------------------------------------------
+  # {
+  #   name         = "legacy-vlan-10"
+  #   description  = "Imported legacy VLAN 10"
+  #   subnet_type  = "VLAN"
+  #   network_id   = 10
+  #   cluster_name = "cluster-01"
+  #   import_uuid  = "12345678-abcd-1234-abcd-1234567890ab"
+  # },
+]

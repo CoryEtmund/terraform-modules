@@ -389,8 +389,10 @@ resource "nutanix_virtual_machine_v2" "vm" {
                       dynamic "key_value_pairs" {
                         for_each = custom_key_values.value.key_value_pairs != null ? custom_key_values.value.key_value_pairs : []
                         content {
-                          name  = key_value_pairs.value.name
-                          value = key_value_pairs.value.value
+                          name = key_value_pairs.value.name
+                          value {
+                            string = key_value_pairs.value.value
+                          }
                         }
                       }
                     }
@@ -421,8 +423,10 @@ resource "nutanix_virtual_machine_v2" "vm" {
                       dynamic "key_value_pairs" {
                         for_each = custom_key_values.value.key_value_pairs != null ? custom_key_values.value.key_value_pairs : []
                         content {
-                          name  = key_value_pairs.value.name
-                          value = key_value_pairs.value.value
+                          name = key_value_pairs.value.name
+                          value {
+                            string = key_value_pairs.value.value
+                          }
                         }
                       }
                     }
@@ -532,7 +536,13 @@ resource "nutanix_virtual_machine_v2" "vm" {
   #---------------------------------------------------------------------------
   # Miscellaneous
   #---------------------------------------------------------------------------
-  source                     = each.value.source
+  dynamic "source" {
+    for_each = each.value.source != null ? [each.value.source] : []
+    content {
+      entity_type = source.value.entity_type
+    }
+  }
+
   hardware_clock_timezone    = each.value.hardware_clock_timezone
   is_vga_console_enabled     = each.value.is_vga_console_enabled
   is_gpu_console_enabled     = each.value.is_gpu_console_enabled

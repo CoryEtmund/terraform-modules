@@ -301,7 +301,9 @@ variable "virtual_machines" {
     #---------------------------------------------------------------------------
     # Miscellaneous
     #---------------------------------------------------------------------------
-    source                   = optional(string, null)  # VM or VM_RECOVERY_POINT (clone source type)
+    source = optional(object({                         # Clone source specification
+      entity_type = string                               # VM or VM_RECOVERY_POINT
+    }), null)
     hardware_clock_timezone  = optional(string, null)  # IANA TZDB timezone
     is_vga_console_enabled   = optional(bool, null)
     is_gpu_console_enabled   = optional(bool, null)
